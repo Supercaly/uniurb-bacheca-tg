@@ -1,7 +1,8 @@
+import os
+import logging
 import feedparser
 import requests
 from html2text import HTML2Text
-import os
 
 def get_env(env: str) -> str:
     """
@@ -41,11 +42,14 @@ def send_item_to_tg(
         "text": text
     })
     if not res.ok:
-        print(f"ERROR: {res.json()}")
+        logging.getLogger(__name__).error(res.json())
         return False
     return True
 
 def main():
+    # Get logger
+    logger = logging.getLogger(__name__)
+
     # Global html2text converter
     h2t = HTML2Text()
 
@@ -65,15 +69,15 @@ def main():
             old_msgs = list(map(lambda e: e.replace("\n",""), old_msgs))
     except IOError:
         old_msgs = []
-    print(f"got {len(old_msgs)} old messages")
+    logger.info(f"got {len(old_msgs)} old messages")
 
     # Reed and parse the RSS the feeds
     feed = feedparser.parse(FEED_URL)
-    print(f"got {len(feed.entries)} items from feed")
+    logger.info(f"got {len(feed.entries)} items from feed")
 
     # Get all items that where not sent previously
     items_to_send = [i for i in feed.entries if i.link not in old_msgs]
-    print(f"need to send {len(items_to_send)} items")
+    logger.info(f"need to send {len(items_to_send)} items")
 
     # Send new items to tg
     for entry in items_to_send:
@@ -90,7 +94,14 @@ def main():
             db.write("\n")
 
 if __name__ == "__main__":
+    # Init logger
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s: %(message)s"
+    )
+    logger = logging.getLogger(__name__)
+
     try:
         main()
     except Exception as ex:
-        print(f"ERROR: {ex}")
+        logger.error(ex)
