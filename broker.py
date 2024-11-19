@@ -1,5 +1,6 @@
 import feedparser
 import requests
+from html2text import HTML2Text
 import os
 
 def get_env(env: str) -> str:
@@ -14,19 +15,27 @@ def get_env(env: str) -> str:
         raise Exception(f"environment variable '{env}' not defined")
     return val
 
-def send_item_to_tg(item: object, url: str, chat_id: str) -> bool:
+def send_item_to_tg(
+    title: str,
+    desc: str,
+    link: str,
+    url: str,
+    chat_id: str
+) -> bool:
     """
     Send a feed item as a message to the telegram channel.
 
     Params:
-        item: The feed item to send.
+        title: Title of the feed item to send.
+        desc: Description of the feed item to send.
+        link: Link to the feed item to send.
         url: URL of the tg bot api.
         chat_id: TG chat id.
     
     Returns:
         True if the message is sent correctly, False in case of error.
     """
-    text = f"{item.title}"
+    text = f"{title}\n\n{desc}\n{link}"
     res = requests.post(url, data={
         "chat_id": chat_id,
         "text": text
@@ -37,21 +46,17 @@ def send_item_to_tg(item: object, url: str, chat_id: str) -> bool:
     return True
 
 def main():
+    # Global html2text converter
+    h2t = HTML2Text()
+
     # Get configs from env variables
     DB_FOLDER = get_env('DB_FOLDER')
     DB_FILE = get_env('DB_FILE')
     DB_PATH = os.path.join(DB_FOLDER, DB_FILE)
-
     FEED_URL = get_env('FEED_URL')
     TG_BOT_TOKEN = get_env('TG_BOT_TOKEN')
     TG_CHAT_ID = get_env('TG_CHAT_ID')
     TG_URL = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
-
-    print(f"{DB_PATH      = }")
-    print(f"{FEED_URL     = }")
-    print(f"{TG_BOT_TOKEN = }")
-    print(f"{TG_CHAT_ID   = }")
-    print(f"{TG_URL   = }")
 
     # Read db file
     try:
@@ -72,7 +77,11 @@ def main():
 
     # Send new items to tg
     for entry in items_to_send:
-        send_item_to_tg(entry, TG_URL, TG_CHAT_ID)
+        send_item_to_tg(entry.title,
+                        h2t.handle(entry.description),
+                        entry.link,
+                        TG_URL,
+                        TG_CHAT_ID)
 
     # Append the id the the sent items to the db
     with open(DB_PATH, "a+") as db:
