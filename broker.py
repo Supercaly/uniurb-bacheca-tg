@@ -80,17 +80,20 @@ def main():
     logger.info(f"need to send {len(items_to_send)} items")
 
     # Send new items to tg
+    new_msgs = []
     for entry in items_to_send:
-        send_item_to_tg(entry.title,
+        if send_item_to_tg(entry.title,
                         h2t.handle(entry.description),
                         entry.link,
                         TG_URL,
-                        TG_CHAT_ID)
+                        TG_CHAT_ID):
+            new_msgs.append(entry.link)
+    logger.info(f"sent {len(new_msgs)} items")
 
     # Append the id the the sent items to the db
     with open(DB_PATH, "a+") as db:
-        for i in items_to_send:
-            db.write(i.link)
+        for i in new_msgs:
+            db.write(i)
             db.write("\n")
 
 if __name__ == "__main__":
