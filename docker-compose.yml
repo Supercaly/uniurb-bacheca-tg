@@ -1,0 +1,10 @@
+services:
+  server:
+    build: 
+      context: .
+    container_name: rss-telegram
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./localdb:/app/localdb
