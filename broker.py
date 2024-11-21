@@ -77,6 +77,7 @@ def main():
 
     # Get all items that where not sent previously
     items_to_send = [i for i in feed.entries if i.link not in old_msgs]
+    items_to_send.reverse()
     logger.info(f"need to send {len(items_to_send)} items")
 
     # Send new items to tg
